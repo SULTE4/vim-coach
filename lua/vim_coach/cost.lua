@@ -14,6 +14,10 @@ return {
     word = 3, -- w/b/e/W/B/E
     arrows = 3, -- arrow keys in normal or insert mode
   },
+  -- Movement bursts: consecutive j/k (or h/l) presses are judged by where they end up
+  fidget_min_keys = 6, -- a burst this long ...
+  fidget_min_reversals = 2, -- ... that changes direction at least this often ...
+  fidget_max_net = 1, -- ... and ends at most this far from its start is a fidget
 
   -- Edit-shape detector
   edit_debounce_ms = 600, -- a normal-mode edit span ends after this idle time

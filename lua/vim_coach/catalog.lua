@@ -11,6 +11,7 @@
 --               keytrans notation (e.g. "7j", "ci\"", "<C-D>"). When the user types
 --               a matching command, it counts toward adoption. nil = not observable.
 --   concept     true for prerequisite-only entries that are never detected
+--   stats_only  true for habits that are tracked in stats but never hinted or recommended
 
 local C = {}
 
@@ -57,6 +58,8 @@ C["word-motion"] = { category = "motions", difficulty = 1, requires = {}, keys =
 C["line-ends"] = { category = "motions", difficulty = 1, requires = {}, keys = 1,
   desc = "Jump to start, first non-blank or end of line", example = "0 ^ $",
   adopt = { "^[0%^%$]$" } }
+C["fidget"] = { category = "habits", difficulty = 1, requires = {}, keys = 0, stats_only = true,
+  desc = "Back-and-forth movement that goes nowhere (jkjk, hlhl)", example = "jkjk" }
 C["hjkl"] = { category = "habits", difficulty = 1, requires = {}, keys = 1,
   desc = "Home-row hjkl instead of arrow keys", example = "hjkl" }
 
