@@ -88,6 +88,7 @@ describe("keys perf", function()
 
   it("analyzes one finished run in a couple of milliseconds", function()
     keys._set_mode("n")
+    vim.wo.relativenumber = true -- counted j/k are only suggested with relative numbers
     vim.api.nvim_win_set_cursor(0, { 1, 6 })
     local captured = {}
     local orig = vim.schedule
