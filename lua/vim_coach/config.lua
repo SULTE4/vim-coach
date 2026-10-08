@@ -4,7 +4,7 @@ local M = {}
 M.defaults = {
   enabled = true,
   hint = "popup", -- "popup" | "virt" (end-of-line virtual text) | "notify" | false
-  popup = { position = "cursor" }, -- "cursor" | "top_right"
+  popup = { position = "cursor", dismiss_key = "<M-d>" }, -- position: "cursor" | "top_right"; dismiss_key false = off
   detectors = {
     keys = true, -- key-pattern detector (vim.on_key)
     edits = true, -- edit-shape detector (nvim_buf_attach)
@@ -13,6 +13,7 @@ M.defaults = {
     "help", "qf", "netrw", "neo-tree", "NvimTree", "TelescopePrompt",
     "lazy", "mason", "gitcommit", "vim_coach",
   },
+  ignore = {}, -- idiom ids never shown or recommended, e.g. { "count-jk" } (see :VimCoach dismiss)
   data_path = nil, -- nil = stdpath("data") .. "/vim_coach.json"
 }
 

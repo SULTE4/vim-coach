@@ -14,6 +14,9 @@ local last_any = nil ---@type number?
 local pbuf, pwin ---@type integer?, integer?
 local ptimer ---@type uv.uv_timer_t?
 local group
+local last_shown ---@type {id:string, label:string}?
+local map_key ---@type string?   key currently mapped while a popup is open
+local map_saved ---@type table?  user's previous global mapping for map_key
 
 --- Clock in seconds. Tests may replace it.
 M._clock = function()
@@ -25,14 +28,53 @@ function M.setup()
   vim.api.nvim_set_hl(0, "VimCoachPopup", { link = "NormalFloat", default = true })
   vim.api.nvim_set_hl(0, "VimCoachPopupBorder", { link = "FloatBorder", default = true })
   vim.api.nvim_set_hl(0, "VimCoachPopupKey", { link = "DiagnosticHint", default = true })
+  vim.api.nvim_set_hl(0, "VimCoachPopupDim", { link = "Comment", default = true })
   group = vim.api.nvim_create_augroup("vim_coach_hints", { clear = true })
   vim.api.nvim_create_autocmd("InsertEnter", { group = group, callback = function()
     M.close_popup()
   end })
 end
 
+local function unmap_dismiss()
+  local key, saved = map_key, map_saved
+  map_key, map_saved = nil, nil
+  if not key then
+    return
+  end
+  pcall(vim.keymap.del, "n", key)
+  if saved and next(saved) then
+    pcall(vim.fn.mapset, "n", false, saved)
+  end
+end
+
+local function map_dismiss(key)
+  unmap_dismiss()
+  local prev = vim.fn.maparg(key, "n", false, true)
+  -- Buffer-local user mappings win over ours anyway; only save a global one.
+  map_saved = (type(prev) == "table" and next(prev) and (prev.buffer or 0) == 0) and prev or nil
+  map_key = key
+  vim.keymap.set("n", key, function()
+    M.dismiss_last()
+  end, { desc = "vim-coach: do not show this hint again" })
+end
+
+--- Dismiss the idiom of the last hint shown (any style) and close the popup.
+---@return string? id
+function M.dismiss_last()
+  if not last_shown then
+    vim.notify("vim-coach: no hint shown yet")
+    return nil
+  end
+  local id, label = last_shown.id, last_shown.label
+  M.close_popup()
+  require("vim_coach.store").dismiss(id)
+  vim.notify(("vim-coach: %s will not be shown again (:VimCoach undismiss %s)"):format(label, id))
+  return id
+end
+
 --- Close the popup window, if any.
 function M.close_popup()
+  unmap_dismiss()
   if ptimer then
     ptimer:stop()
   end
@@ -44,7 +86,7 @@ end
 
 --- Test hook: forget cooldown timestamps.
 function M._reset()
-  last_any = nil
+  last_any, last_shown = nil, nil
   M.clear()
 end
 
@@ -116,6 +158,11 @@ local function popup_lines(finding, count)
   return lines, 5
 end
 
+local function dismiss_key()
+  local k = (config.options.popup or {}).dismiss_key
+  return k and k ~= "" and k or nil
+end
+
 local function show_popup(finding, count)
   M.close_popup()
   local lines, key_col = popup_lines(finding, count)
@@ -127,11 +174,19 @@ local function show_popup(finding, count)
     pbuf = vim.api.nvim_create_buf(false, true)
     vim.bo[pbuf].bufhidden = "hide"
   end
+  local dkey = dismiss_key()
+  if dkey then
+    lines[#lines + 1] = vim.fn.keytrans(vim.keycode(dkey)) .. " don't show again"
+    width = math.max(width, vim.fn.strdisplaywidth(lines[#lines]))
+  end
   vim.api.nvim_buf_set_lines(pbuf, 0, -1, false, lines)
   vim.api.nvim_buf_clear_namespace(pbuf, ns, 0, -1)
   vim.api.nvim_buf_set_extmark(pbuf, ns, 1, key_col, {
     end_col = key_col + #(finding.label or finding.event.idiom), hl_group = "VimCoachPopupKey",
   })
+  if dkey then
+    vim.api.nvim_buf_set_extmark(pbuf, ns, #lines - 1, 0, { end_col = #lines[#lines], hl_group = "VimCoachPopupDim" })
+  end
   local opts = {
     focusable = false, style = "minimal", border = "rounded", title = " vim-coach ",
     noautocmd = true, zindex = 60, width = width, height = #lines,
@@ -147,6 +202,9 @@ local function show_popup(finding, count)
   end
   pwin = vim.api.nvim_open_win(pbuf, false, opts)
   vim.wo[pwin].winhighlight = "NormalFloat:VimCoachPopup,FloatBorder:VimCoachPopupBorder"
+  if dkey then
+    map_dismiss(dkey)
+  end
   ptimer = ptimer or uv.new_timer()
   ptimer:stop()
   ptimer:start(cost.popup_ttl_ms, 0, vim.schedule_wrap(M.close_popup))
@@ -201,6 +259,7 @@ function M.offer(finding)
     show_virt(message(finding))
   end
   last_any = now
+  last_shown = { id = id, label = finding.label or id }
   return true
 end
 

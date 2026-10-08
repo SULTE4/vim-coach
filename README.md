@@ -8,6 +8,7 @@ A Neovim plugin that watches how you move and edit, notices when a Vim idiom wou
         │ j x7 - 3rd time this session │
         │ Try: 7j   (saves 5 keys)     │
         │ also: }  G                   │
+        │ <M-d> don't show again       │
         ╰──────────────────────────────╯
 ```
 
@@ -64,6 +65,7 @@ Just edit as usual. When you repeat the same inefficient action, a popup suggest
 | `:VimCoach log` | Suggestions found this session |
 | `:VimCoach scan` | Find runs of similar lines in the current buffer (quickfix list) |
 | `:VimCoach dismiss {id}` | Stop hinting and recommending an idiom (`undismiss` to undo) |
+| `:VimCoach dismiss-last` | Dismiss the idiom from the most recent hint (same as `<M-d>` on a popup) |
 | `:VimCoach learned {id}` | Mark an idiom as learned |
 | `:VimCoach toggle` | Turn the detectors on or off |
 | `:VimCoach reset` | Erase all stored stats (asks first) |
@@ -79,6 +81,16 @@ A popup appears when you **repeat the same inefficient action**:
 - **Never in your way**: the popup does not take focus or keystrokes, closes after 5 s or when you enter insert mode, and at least 10 s pass between two popups. Nothing is shown in insert mode.
 - **Stops when it should**: idioms you have learned (typed yourself 5 times across 2 days) or dismissed are never shown again. Stats-only habits such as fidgeting are never shown.
 
+**Don't show again**: press `<M-d>` (Alt-d) while a popup is visible to dismiss that idiom for good. The key is mapped only while the popup is open, and any mapping you had on it is restored afterwards. Change it with `popup.dismiss_key`, undo with `:VimCoach undismiss {id}`.
+
+**Prefer plain hjkl?** Dismissals are stored in the stats file. To keep motion preferences in your config instead, list idiom ids in `ignore`:
+
+```lua
+opts = { ignore = { "count-jk", "half-page" } } -- never suggest 7j or <C-d>
+```
+
+Ids complete with Tab after `:VimCoach dismiss `. Motion ids: `count-jk` (7j), `paragraph-jump` (}), `screen-jump` (H M L), `goto-line` (gg G 42G), `half-page` (<C-d>), `find-char` (f t), `word-motion` (3w), `line-ends` ($ 0 ^).
+
 Position, via `popup.position`:
 
 | Value | Where |
@@ -88,7 +100,7 @@ Position, via `popup.position`:
 
 Prefer something quieter? Set `hint = "virt"` (end-of-line virtual text), `"notify"` (`vim.notify`) or `false`. The same schedule applies to every style.
 
-Highlight groups (default-linked, override them in your colorscheme): `VimCoachPopup` (NormalFloat), `VimCoachPopupBorder` (FloatBorder), `VimCoachPopupKey` (DiagnosticHint, the suggested keys), `VimCoachHint` (DiagnosticHint, virtual-text style).
+Highlight groups (default-linked, override them in your colorscheme): `VimCoachPopup` (NormalFloat), `VimCoachPopupBorder` (FloatBorder), `VimCoachPopupKey` (DiagnosticHint, the suggested keys), `VimCoachPopupDim` (Comment, the footer), `VimCoachHint` (DiagnosticHint, virtual-text style).
 
 ## How it decides what to learn
 - **Learning value** = keys you could have saved (older events decay with a 14-day half-life) / how hard the idiom is to learn (1 to 5). Frequent, cheap wins rank first.
@@ -105,10 +117,14 @@ Defaults:
 require("vim_coach").setup({
   enabled = true,
   hint = "popup", -- "popup" | "virt" (end-of-line virtual text) | "notify" | false
-  popup = { position = "cursor" }, -- "cursor" | "top_right"
+  popup = {
+    position = "cursor", -- "cursor" | "top_right"
+    dismiss_key = "<M-d>", -- "don't show again" while a popup is open; false to disable
+  },
   detectors = { keys = true, edits = true },
   exclude_ft = { "help", "qf", "netrw", "neo-tree", "NvimTree", "TelescopePrompt",
                  "lazy", "mason", "gitcommit", "vim_coach" },
+  ignore = {}, -- idiom ids to never show or recommend, e.g. { "count-jk", "half-page" }
   data_path = nil, -- nil = stdpath("data") .. "/vim_coach.json"
 })
 ```

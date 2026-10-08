@@ -16,6 +16,8 @@ local adopt = {} ---@type table<string, {count:integer, days:integer, last_day:s
 local undismissed = {} ---@type table<string, boolean>  removed this session, do not resurrect
 local unlearned = {} ---@type table<string, boolean>
 local dirty = false
+-- Dismissed ids plus config `ignore` ids. Rebuilt only when either changes.
+local view, view_ignore, view_dismissed = nil, nil, nil
 local writing = false
 local timer ---@type uv.uv_timer_t?
 local seeded = false
@@ -127,6 +129,7 @@ local function merge(data)
         dismissed[id] = true
       end
     end
+    view = nil
   end
   if type(data.adopt) == "table" then
     for id, a in pairs(data.adopt) do
@@ -342,14 +345,35 @@ function M.rollup()
   return rollup
 end
 
+local function dismissed_view()
+  local ignore = require("vim_coach.config").options.ignore
+  if view and view_ignore == ignore and view_dismissed == dismissed then
+    return view
+  end
+  if not ignore or #ignore == 0 then
+    view = dismissed
+  else
+    view = {}
+    for id in pairs(dismissed) do
+      view[id] = true
+    end
+    for _, id in ipairs(ignore) do
+      view[id] = true
+    end
+  end
+  view_ignore, view_dismissed = ignore, dismissed
+  return view
+end
+
 ---@return VimCoach.State
 function M.state()
-  return { learned = learned, dismissed = dismissed }
+  return { learned = learned, dismissed = dismissed_view() }
 end
 
 ---@param id string
 function M.dismiss(id)
   dismissed[id] = true
+  view = nil
   undismissed[id] = nil
   M.touch()
 end
@@ -357,6 +381,7 @@ end
 ---@param id string
 function M.undismiss(id)
   dismissed[id] = nil
+  view = nil
   undismissed[id] = true
   M.touch()
 end

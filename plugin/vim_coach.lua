@@ -3,7 +3,7 @@ if vim.g.loaded_vim_coach then
 end
 vim.g.loaded_vim_coach = 1
 
-local subcommands = { "stats", "scan", "log", "toggle", "reset", "dismiss", "undismiss", "learned" }
+local subcommands = { "stats", "scan", "log", "toggle", "reset", "dismiss", "undismiss", "learned", "dismiss-last" }
 local with_id = { dismiss = true, undismiss = true, learned = true }
 
 local function ids()
@@ -52,6 +52,8 @@ vim.api.nvim_create_user_command("VimCoach", function(o)
       vc.reset()
       vim.notify("vim-coach: stats erased")
     end
+  elseif sub == "dismiss-last" then
+    require("vim_coach.hints").dismiss_last()
   elseif with_id[sub] then
     local cat = require("vim_coach.catalog")
     if not id or not cat[id] or cat[id].concept then
