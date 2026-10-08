@@ -20,7 +20,7 @@ Every suggestion is **verified**: the candidate idiom is replayed on the text as
 
 | You typed | It suggests |
 | --- | --- |
-| `jjjjjjj` | `7j`, `}`, `G` (whichever verifies and is cheapest) |
+| `jjjjjjj` | `7j`, `}`, `G` (whichever verifies and is cheapest; `7j` only with `relativenumber` on) |
 | `jjjjjjjkk` (overshoot, then correct) | `5j`, counting all 9 presses |
 | `llllll` / `wwww` | `f(`, `t,`, `3w`, `$` |
 | `$a`, `^i`, `xi` | `A`, `I`, `s` |
@@ -83,6 +83,8 @@ A popup appears when you **repeat the same inefficient action**:
 
 **Don't show again**: press `<M-d>` (Alt-d) while a popup is visible to dismiss that idiom for good. The key is mapped only while the popup is open, and any mapping you had on it is restored afterwards. Change it with `popup.dismiss_key`, undo with `:VimCoach undismiss {id}`.
 
+**Counted `j`/`k` need relative numbers**: `7j` is only suggested when the window has `relativenumber` set, because without it you would have to count lines in your head. Without it, the coach suggests `}`, `H`/`M`/`L` or `42G` when they land on the same line. Set `count_jk = "always"` to get `7j` regardless.
+
 **Prefer plain hjkl?** Dismissals are stored in the stats file. To keep motion preferences in your config instead, list idiom ids in `ignore`:
 
 ```lua
@@ -124,6 +126,7 @@ require("vim_coach").setup({
   detectors = { keys = true, edits = true },
   exclude_ft = { "help", "qf", "netrw", "neo-tree", "NvimTree", "TelescopePrompt",
                  "lazy", "mason", "gitcommit", "vim_coach" },
+  count_jk = "relativenumber", -- suggest 7j/5k only when 'relativenumber' is on | "always"
   ignore = {}, -- idiom ids to never show or recommend, e.g. { "count-jk", "half-page" }
   data_path = nil, -- nil = stdpath("data") .. "/vim_coach.json"
 })

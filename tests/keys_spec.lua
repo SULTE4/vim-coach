@@ -29,9 +29,10 @@ local function lines_fixture(n)
   return t
 end
 
-local function scratch(lines, cursor)
+local function scratch(lines, cursor, relnum)
   vim.cmd("enew!")
   vim.bo.buftype = ""
+  vim.wo.relativenumber = relnum ~= false
   vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
   vim.api.nvim_win_set_cursor(0, cursor or { 1, 0 })
 end
@@ -372,5 +373,33 @@ describe("keys", function()
     scratch({ "a" }, { 1, 0 })
     feed("jjjj")
     assert.equals(t, keys.total())
+  end)
+
+  describe("relativenumber", function()
+    it("does not suggest counted j/k without relativenumber", function()
+      scratch(lines_fixture(40), { 1, 6 }, false)
+      feed("jjjjjjj")
+      wait_for(function() return #reports > 0 end)
+      for _, f in ipairs(reports) do
+        assert.are_not.equals("count-jk", f.event.idiom)
+        assert.is_false(vim.tbl_contains(f.event.alts, "count-jk"))
+      end
+    end)
+
+    it("reports nothing for a run followed by an edit without relativenumber", function()
+      scratch(lines_fixture(40), { 1, 6 }, false)
+      feed("jjjjjjjdd")
+      vim.wait(cost.run_idle_ms + 400, function() return false end, 10)
+      assert.equals(0, #reports)
+    end)
+
+    it("suggests counted j/k anyway with count_jk = always", function()
+      config.setup({ count_jk = "always" })
+      scratch(lines_fixture(40), { 1, 6 }, false)
+      feed("jjjjjjj")
+      wait_for(function() return #reports > 0 end)
+      assert.equals("count-jk", reports[1].event.idiom)
+      assert.equals("7j", reports[1].label)
+    end)
   end)
 end)

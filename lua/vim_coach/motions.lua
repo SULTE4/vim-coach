@@ -175,7 +175,10 @@ end
 
 local function vertical(base, n, from, to, ctx, out)
   local fwd = base == "j"
-  out[#out + 1] = cand("count-jk", key(n, base), nil)
+  -- Counting lines is only practical with relative line numbers on screen.
+  if ctx.relnum ~= false then
+    out[#out + 1] = cand("count-jk", key(n, base), nil)
+  end
   out[#out + 1] = cand("paragraph-jump", fwd and "}" or "{")
   for _, k in ipairs({ "H", "M", "L" }) do
     out[#out + 1] = cand("screen-jump", k)
@@ -242,7 +245,8 @@ end
 ---@param n integer  presses in the run
 ---@param from {[1]:integer,[2]:integer}  (row, byte col) at run start
 ---@param to {[1]:integer,[2]:integer}  (row, byte col) at run end
----@param ctx {line:string?, nlines:integer?}  line = text of row `to[1]`
+---@param ctx {line:string?, nlines:integer?, relnum:boolean?}  line = text of row `to[1]`;
+---  relnum = false drops counted j/k (no relative line numbers to read the count from)
 ---@return VimCoach.Candidate[]
 function M.candidates(base, n, from, to, ctx)
   local out = {}

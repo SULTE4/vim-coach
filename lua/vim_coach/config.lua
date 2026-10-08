@@ -13,6 +13,7 @@ M.defaults = {
     "help", "qf", "netrw", "neo-tree", "NvimTree", "TelescopePrompt",
     "lazy", "mason", "gitcommit", "vim_coach",
   },
+  count_jk = "relativenumber", -- suggest 7j/5k only with 'relativenumber' on | "always"
   ignore = {}, -- idiom ids never shown or recommended, e.g. { "count-jk" } (see :VimCoach dismiss)
   data_path = nil, -- nil = stdpath("data") .. "/vim_coach.json"
 }

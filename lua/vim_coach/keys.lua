@@ -121,9 +121,20 @@ end
 
 -- Candidates that need no replay (used when an edit already followed the run).
 local PURE_IDIOMS = { ["find-char"] = true, ["word-motion"] = true, ["line-ends"] = true }
+-- Counted j/k are suggested only with 'relativenumber' unless config says "always".
+local function relnum_ok(win)
+  if config.options.count_jk == "always" then
+    return true
+  end
+  return api.nvim_win_is_valid(win) and vim.wo[win].relativenumber
+end
+
 local function pure_candidates(job, base, vert, from, to, cn)
   local good = {}
   if vert then
+    if not relnum_ok(job.win) then
+      return good
+    end
     local rows = to[1] - from[1]
     if math.abs(rows) ~= cn or (rows > 0) ~= (base == "j") then
       return good
@@ -229,6 +240,7 @@ local function analyze(job)
     local ctx = {
       line = api.nvim_buf_get_lines(bufnr, to[1] - 1, to[1], false)[1],
       nlines = api.nvim_buf_line_count(bufnr),
+      relnum = relnum_ok(win),
     }
     local cands = motions.candidates(base, cn, from, to, ctx)
     local within = verify.budget()
