@@ -46,8 +46,9 @@ return {
   -- Hints
   hint_after = 3, -- same idiom seen this many times in the session before hinting
   hint_big_saving = 20, -- a single finding saving this many keys is hinted immediately
-  hint_cooldown_s = 30, -- global minimum gap between hints
-  hint_idiom_cooldown_s = 600, -- minimum gap between hints for the same idiom
+  hint_cooldown_s = 10, -- global minimum gap between hints
+  hint_escalation = 2, -- hint at hint_after * hint_escalation^k repeats: 3, 6, 12, 24...
+  popup_ttl_ms = 5000, -- popup closes after this long
   hint_ttl_ms = 4000, -- virtual-text hint disappears after this long
 
   -- Adoption ("learned")

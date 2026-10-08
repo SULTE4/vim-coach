@@ -254,11 +254,12 @@ local function analyze(job)
       best = good[i]
     end
   end
-  local alts, seen = {}, { [best.idiom] = true }
+  local alts, alt_labels, seen = {}, {}, { [best.idiom] = true }
   for _, c in ipairs(good) do
     if not seen[c.idiom] then
       seen[c.idiom] = true
       alts[#alts + 1] = c.idiom
+      alt_labels[#alt_labels + 1] = c.label
     end
   end
   sink().report({
@@ -273,6 +274,7 @@ local function analyze(job)
       measured = true,
     },
     label = best.label,
+    alt_labels = alt_labels,
     was = was,
     since = job.since,
   })

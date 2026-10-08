@@ -18,6 +18,7 @@
 ---@class VimCoach.Finding
 ---@field event VimCoach.Event  edit_id/ts may be omitted; sink fills them
 ---@field label string          what the hint shows, e.g. "7j", "ci\"", ":m +1"
+---@field alt_labels string[]? labels of the verified alternatives, same order as event.alts
 ---@field was string?           what the user did, no code text, e.g. "j x7", "14 x <BS>"
 ---@field example {before:string[], after:string[]}?  session-only, never persisted
 ---@field since number?         vim.uv.now() at span/run start (for claim dedupe)

@@ -174,7 +174,7 @@ local function analyze(buf, before, after, first_row, cursor, since, kd)
   end
   local ok = verify.texts(span, cands)
   local best
-  local seen, alts = {}, {}
+  local seen, alts, labels = {}, {}, {}
   for i, c in ipairs(cands) do
     if ok[i] then
       if not best then
@@ -183,6 +183,7 @@ local function analyze(buf, before, after, first_row, cursor, since, kd)
       elseif not seen[c.idiom] then
         seen[c.idiom] = true
         alts[#alts + 1] = c.idiom
+        labels[c.idiom] = c.label
       end
     end
   end
@@ -195,6 +196,7 @@ local function analyze(buf, before, after, first_row, cursor, since, kd)
   local is_dot = repeats >= cost.repeat_min and best.keys ~= nil
   if is_dot then
     alts[#alts + 1] = idiom
+    labels[idiom] = label
     idiom, label, ideal = "dot-repeat", ".", 1
   end
 
@@ -217,10 +219,11 @@ local function analyze(buf, before, after, first_row, cursor, since, kd)
     return
   end
 
-  local alt_list = {}
+  local alt_list, alt_labels = {}, {}
   for _, a in ipairs(alts) do
     if a ~= idiom then
       alt_list[#alt_list + 1] = a
+      alt_labels[#alt_labels + 1] = labels[a]
     end
   end
   require("vim_coach.sink").report({
@@ -235,6 +238,7 @@ local function analyze(buf, before, after, first_row, cursor, since, kd)
       measured = measured,
     },
     label = label,
+    alt_labels = alt_labels,
     was = describe(shape, kd),
     example = { before = before, after = after },
     since = since,

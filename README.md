@@ -1,10 +1,14 @@
 # vim-coach
 
-A Neovim plugin that watches how you move and edit, notices when a Vim idiom would have done the same thing in fewer keystrokes, hints about it now and then, and ranks which idioms are most worth learning next.
+A Neovim plugin that watches how you move and edit, notices when a Vim idiom would have done the same thing in fewer keystrokes, pops up when you keep repeating the same inefficient action, and ranks which idioms are most worth learning next.
 
 ```
-vim-coach: 7j could do this (j x7, saves 5 keys)
-vim-coach: ci" could do this (14 x <BS>, saves 13 keys)
+        jjjjjjj|
+        ╭─ vim-coach ──────────────────╮
+        │ j x7 - 3rd time this session │
+        │ Try: 7j   (saves 5 keys)     │
+        │ also: }  G                   │
+        ╰──────────────────────────────╯
 ```
 
 Every suggestion is **verified**: the candidate idiom is replayed on the text as it was before your edit, and it is only reported if it produces exactly the same result.
@@ -52,7 +56,7 @@ Any other plugin manager: add the repo and call `require("vim_coach").setup({})`
 
 ## Usage
 
-Just edit as usual. Hints show up occasionally at the end of the current line. Open the stats any time:
+Just edit as usual. When you repeat the same inefficient action, a popup suggests the better idiom (see [Popups](#popups)). Open the stats any time:
 
 | Command | What it does |
 | --- | --- |
@@ -66,9 +70,27 @@ Just edit as usual. Hints show up occasionally at the end of the current line. O
 
 In the stats window: `q` close, `d` dismiss, `u` undismiss, `L` mark learned, `e` show this session's before/after example for the idiom under the cursor.
 
-## How it decides what to hint and what to learn
+## Popups
 
-- **Hints are rare on purpose.** An idiom is hinted only after the same pattern was seen 3 times in the session, or right away when a single edit would save 20+ keys. Hints are rate limited (30 s between hints, 10 min per idiom), never shown in insert mode, and stop once you use the idiom or dismiss it.
+A popup appears when you **repeat the same inefficient action**:
+
+- **Escalating schedule**: on the 3rd time the same pattern (idiom) is seen in a session, then the 6th, 12th, 24th... A habit that persists keeps getting flagged, but less and less often.
+- **Big wins right away**: a single edit that could have saved 20+ keys pops up on the first sighting.
+- **Never in your way**: the popup does not take focus or keystrokes, closes after 5 s or when you enter insert mode, and at least 10 s pass between two popups. Nothing is shown in insert mode.
+- **Stops when it should**: idioms you have learned (typed yourself 5 times across 2 days) or dismissed are never shown again. Stats-only habits such as fidgeting are never shown.
+
+Position, via `popup.position`:
+
+| Value | Where |
+| --- | --- |
+| `"cursor"` (default) | right below the cursor, flipping above it near the bottom of the window |
+| `"top_right"` | the top-right corner of the editor |
+
+Prefer something quieter? Set `hint = "virt"` (end-of-line virtual text), `"notify"` (`vim.notify`) or `false`. The same schedule applies to every style.
+
+Highlight groups (default-linked, override them in your colorscheme): `VimCoachPopup` (NormalFloat), `VimCoachPopupBorder` (FloatBorder), `VimCoachPopupKey` (DiagnosticHint, the suggested keys), `VimCoachHint` (DiagnosticHint, virtual-text style).
+
+## How it decides what to learn
 - **Learning value** = keys you could have saved (older events decay with a 14-day half-life) / how hard the idiom is to learn (1 to 5). Frequent, cheap wins rank first.
 - **Prerequisites**: if the top idiom needs another one you have not learned (e.g. `dt,` needs `f`/`t`), the prerequisite is recommended first.
 - **Adoption**: when you start typing an idiom yourself (5 times across 2 days), it is marked learned automatically.
@@ -82,13 +104,16 @@ Defaults:
 ```lua
 require("vim_coach").setup({
   enabled = true,
-  hint = "virt", -- "virt" (end-of-line virtual text) | "notify" | false
+  hint = "popup", -- "popup" | "virt" (end-of-line virtual text) | "notify" | false
+  popup = { position = "cursor" }, -- "cursor" | "top_right"
   detectors = { keys = true, edits = true },
   exclude_ft = { "help", "qf", "netrw", "neo-tree", "NvimTree", "TelescopePrompt",
                  "lazy", "mason", "gitcommit", "vim_coach" },
   data_path = nil, -- nil = stdpath("data") .. "/vim_coach.json"
 })
 ```
+
+Popup knobs in `cost.lua`: `hint_after` (3), `hint_escalation` (2), `hint_big_saving` (20), `hint_cooldown_s` (10), `popup_ttl_ms` (5000).
 
 Every threshold, cooldown, timing and budget lives in [`lua/vim_coach/cost.lua`](lua/vim_coach/cost.lua), so tuning happens in one place.
 

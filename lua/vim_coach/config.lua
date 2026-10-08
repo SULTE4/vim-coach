@@ -3,7 +3,8 @@ local M = {}
 
 M.defaults = {
   enabled = true,
-  hint = "virt", -- "virt" (end-of-line virtual text) | "notify" | false
+  hint = "popup", -- "popup" | "virt" (end-of-line virtual text) | "notify" | false
+  popup = { position = "cursor" }, -- "cursor" | "top_right"
   detectors = {
     keys = true, -- key-pattern detector (vim.on_key)
     edits = true, -- edit-shape detector (nvim_buf_attach)
